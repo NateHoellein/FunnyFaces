@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct FunnyFaceView: View {
     @StateObject var faceViewModel: FacesViewmodel
@@ -22,10 +23,22 @@ struct FunnyFaceView: View {
                 Text("No image selected")
                     .padding()
             }
+            PhotosPicker(
+                selection: $faceViewModel.photosViewModel.selectedPickerItem,
+                    matching: .images,
+                    photoLibrary: .shared()
+                  ) {
+                    Text("Select Photo")
+                      .padding()
+                      .background(Color.blue)
+                      .foregroundColor(.white)
+                      .cornerRadius(10)
+                  }
             
             Button("Detect Faces") {
                 faceViewModel.detectFaces()
             }
+            .disabled(faceViewModel.photosViewModel.selectedImage == nil)
             if let errorMessage = faceViewModel.errorMessages {
               Text(errorMessage)
                 .foregroundColor(.red)

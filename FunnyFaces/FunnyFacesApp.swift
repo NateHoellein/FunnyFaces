@@ -11,6 +11,7 @@ import PhotosUI
 @main
 struct FunnyFacesApp: App {
     @StateObject private var photoPickerViewModel = PhotoPickerViewModel()
+    @StateObject private var cameraPickerViewModel = CameraViewModel()
     var body: some Scene {
         WindowGroup {
             NavigationStack {
@@ -18,30 +19,17 @@ struct FunnyFacesApp: App {
                     TabView {
                         FunnyFaceView(faceViewModel: FacesViewmodel(photosViewModel: photoPickerViewModel))
                             .tabItem{
-                                Label("Faces", systemImage:"face.dashed.fill")
+                                Label("Photos", systemImage:"photo.on.rectangle.angled")
                             }
     
-                        CameraView()
+                        GooglyEyesView(viewModel: cameraPickerViewModel)
                             .tabItem{
                                 Label("Camera", systemImage: "camera")
                             }
                     }
                     
                 }.navigationTitle("FUNNY FACES")
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            PhotosPicker(
-                                selection: $photoPickerViewModel.selectedPickerItem,
-                                matching: .images,
-                                photoLibrary: .shared()
-                            ) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .imageScale(.large)
-                            }
-                        }
-                    }
             }
         }
     }
 }
-

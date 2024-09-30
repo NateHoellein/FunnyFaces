@@ -1,29 +1,39 @@
 //
-//  FacesViewModel.swift
+//  CameraPickerView.swift
 //  FunnyFaces
 //
-//  Created by Nate on 9/28/24.
+//  Created by Nate on 9/27/24.
 //
 
 import SwiftUI
+import AVFoundation
 import Vision
 
-struct FaceData {
-    var landmarks: VNFaceLandmarks2D
-    var faceBoundBox: CGRect
-}
-
-class FacesViewmodel: ObservableObject {
+class CameraViewModel: ObservableObject {
+    @Published var capturedImage: UIImage?
+    @Published var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
     @Published var errorMessages: String? = nil
-    @Published var photosViewModel: PhotoPickerViewModel
     
-    init(photosViewModel: PhotoPickerViewModel) {
-        self.photosViewModel = photosViewModel
+    init() {
+        checkCameraPermissions()
+    }
+    
+    func checkCameraPermissions() {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        DispatchQueue.main.async {
+            self.cameraPermissionStatus = status
+        }
+    }
+    
+    func requestCameraPermissions() {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            self.checkCameraPermissions()
+        }
     }
     
     @MainActor func detectFaces() {
         
-        guard let image = photosViewModel.selectedImage else {
+        guard let image = capturedImage else {
             DispatchQueue.main.async {
                 self.errorMessages = "Could not load image"
             }
@@ -66,7 +76,7 @@ class FacesViewmodel: ObservableObject {
             let updatedImage = image.drawEyes(faceData: faceData)
             
             DispatchQueue.main.async { [self] in
-                self?.photosViewModel.selectedImage = updatedImage
+                self?.capturedImage = updatedImage
             }
         }
         
@@ -92,7 +102,7 @@ class FacesViewmodel: ObservableObject {
             let updatedImage = image.drawVisionRect(visionRects: rectangles)
             
             DispatchQueue.main.async { [self] in
-                self?.photosViewModel.selectedImage = updatedImage
+                self?.capturedImage = updatedImage
             }
         }
         
@@ -111,3 +121,5 @@ class FacesViewmodel: ObservableObject {
         }
     }
 }
+
+

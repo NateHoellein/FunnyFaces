@@ -74,32 +74,57 @@ extension UIImage {
             
             let leftEyeRect = self.createRectFromPoints(points: leftEyePoints!)
             
-            UIColor.red.setFill()
+            UIColor.white.setFill()
             let leftpath = UIBezierPath(ovalIn: leftEyeRect)
             
             leftpath.fill()
-            UIColor.red.setStroke()
+            UIColor.white.setStroke()
             leftpath.lineWidth = 2.0
             leftpath.stroke()
             leftpath.close()
+            
+            let leftPupalPoints = facedata.landmarks.leftPupil?.normalizedPoints.map {$0.applying(transform)}
+            let leftPupalRect = self.createRectFromPoints(points: leftPupalPoints!)
+            
+            UIColor.black.setFill()
+            let leftPupalPath = UIBezierPath(ovalIn: leftPupalRect)
+            
+            leftPupalPath.fill()
+            UIColor.black.setStroke()
+            leftPupalPath.lineWidth = 2.0
+            leftPupalPath.stroke()
+            leftPupalPath.close()
             
             let rightEyePoints = facedata.landmarks.rightEye?.normalizedPoints.map { $0.applying(transform) }
             
             let rightEyeRect = self.createRectFromPoints(points: rightEyePoints!)
             
-            UIColor.blue.setFill()
+            UIColor.white.setFill()
             let rightpath = UIBezierPath(ovalIn: rightEyeRect)
             
             rightpath.fill()
-            UIColor.blue.setStroke()
+            UIColor.white.setStroke()
             rightpath.lineWidth = 2.0
             rightpath.stroke()
             rightpath.close()
 
+            let rightPupalPoints = facedata.landmarks.rightPupil?.normalizedPoints.map {$0.applying(transform)}
+            let rightPupalRect = self.createRectFromPoints(points: rightPupalPoints!)
+            
+            UIColor.black.setFill()
+            let rightPupalPath = UIBezierPath(ovalIn: rightPupalRect)
+            
+            rightPupalPath.fill()
+            UIColor.black.setStroke()
+            rightPupalPath.lineWidth = 2.0
+            rightPupalPath.stroke()
+            rightPupalPath.close()
         }
 
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
-        let correctlyOrientedImage = UIImage(cgImage: newImage!.cgImage!, scale: self.scale, orientation: adjustOrientation(orient: self.imageOrientation))
+        let correctlyOrientedImage = UIImage(cgImage: newImage!.cgImage!,
+                                             scale: self.scale,
+                                             orientation: adjustOrientation(orient: self.imageOrientation))
         
         return correctlyOrientedImage
     }

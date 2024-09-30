@@ -46,11 +46,11 @@ extension UIImage {
     }
     
     func drawEyes(faceData: [FaceData]?) -> UIImage? {
+        print("Orientation: \(self.imageOrientation)")
         
         guard let cgImage = self.cgImage else {
             return nil
         }
-        
         guard let faceData = faceData else {
             return nil
         }
@@ -65,29 +65,29 @@ extension UIImage {
     
         for facedata in faceData {
             
-            let transform = CGAffineTransform(scaleX: imageSize.width, y: -imageSize.height)
-                .translatedBy(x: 0, y: -1)
-                .scaledBy(x: facedata.faceBoundBox.width, y: facedata.faceBoundBox.height)
-                .translatedBy(x: facedata.faceBoundBox.minX, y: facedata.faceBoundBox.minY)
-            
-            let leftEyePoints = facedata.landmarks.leftEye?.normalizedPoints.map { $0.applying(transform) }
-            
-            let leftEyeRect = self.createRectFromPoints(points: leftEyePoints!)
-            
-            UIColor.white.setFill()
+            let leftEyeRect = self.createRect(points: facedata.landmarks.leftEye!.normalizedPoints,
+                                              boundingBox: facedata.faceBoundBox,
+                                              imageSize: imageSize)
+            print("Left eye \(leftEyeRect)")
+            UIColor.yellow.setFill()
             let leftpath = UIBezierPath(ovalIn: leftEyeRect)
             
             leftpath.fill()
-            UIColor.white.setStroke()
+            UIColor.yellow.setStroke()
             leftpath.lineWidth = 2.0
             leftpath.stroke()
             leftpath.close()
             
-            let leftPupalPoints = facedata.landmarks.leftPupil?.normalizedPoints.map {$0.applying(transform)}
-            let leftPupalRect = self.createRectFromPoints(points: leftPupalPoints!)
-            
+            let leftPupalRect = self.createRect(points: facedata.landmarks.leftPupil!.normalizedPoints,
+                                              boundingBox: facedata.faceBoundBox,
+                                              imageSize: imageSize)
+            let updatedLeftPupal = CGRect(x: leftPupalRect.minX,
+                                          y: leftPupalRect.minY,
+                                          width: leftEyeRect.width / 3,
+                                          height: leftEyeRect.height / 3)
+            print("Left pupal \(updatedLeftPupal)")
             UIColor.black.setFill()
-            let leftPupalPath = UIBezierPath(ovalIn: leftPupalRect)
+            let leftPupalPath = UIBezierPath(ovalIn: updatedLeftPupal)
             
             leftPupalPath.fill()
             UIColor.black.setStroke()
@@ -95,9 +95,9 @@ extension UIImage {
             leftPupalPath.stroke()
             leftPupalPath.close()
             
-            let rightEyePoints = facedata.landmarks.rightEye?.normalizedPoints.map { $0.applying(transform) }
-            
-            let rightEyeRect = self.createRectFromPoints(points: rightEyePoints!)
+            let rightEyeRect = self.createRect(points: facedata.landmarks.rightEye!.normalizedPoints,
+                                              boundingBox: facedata.faceBoundBox,
+                                              imageSize: imageSize)
             
             UIColor.white.setFill()
             let rightpath = UIBezierPath(ovalIn: rightEyeRect)
@@ -108,41 +108,64 @@ extension UIImage {
             rightpath.stroke()
             rightpath.close()
 
-            let rightPupalPoints = facedata.landmarks.rightPupil?.normalizedPoints.map {$0.applying(transform)}
-            let rightPupalRect = self.createRectFromPoints(points: rightPupalPoints!)
-            
+            let rightPupalRect = self.createRect(points: facedata.landmarks.rightPupil!.normalizedPoints,
+                                              boundingBox: facedata.faceBoundBox,
+                                              imageSize: imageSize)
+            let updatedRightPupal = CGRect(x: rightPupalRect.minX,
+                                          y: rightPupalRect.minY,
+                                          width: rightEyeRect.width / 3,
+                                          height: rightEyeRect.height / 3)
             UIColor.black.setFill()
-            let rightPupalPath = UIBezierPath(ovalIn: rightPupalRect)
+            let rightPupalPath = UIBezierPath(ovalIn: updatedRightPupal)
             
             rightPupalPath.fill()
             UIColor.black.setStroke()
-            rightPupalPath.lineWidth = 2.0
+            rightPupalPath.lineWidth = 1.0
             rightPupalPath.stroke()
             rightPupalPath.close()
         }
 
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        print("NewImage Orientation: \(newImage!.imageOrientation)")
         let correctlyOrientedImage = UIImage(cgImage: newImage!.cgImage!,
                                              scale: self.scale,
                                              orientation: adjustOrientation(orient: self.imageOrientation))
         
         return correctlyOrientedImage
     }
-
-    func createRectFromPoints(points: [CGPoint]) -> CGRect {
-        let minXPoint = points.min(by: {$0.x < $1.x})
-        let minYPoint = points.min(by: {$0.y < $1.y})
-        let maxXPoint = points.max(by: {$0.x < $1.x})
-        let maxYPoint = points.max(by: {$0.y < $1.y})
-
-        let width = maxXPoint!.x - minXPoint!.x
-        let height = maxYPoint!.y - minYPoint!.y
-        
-        let rect = CGRect(origin: CGPoint(x: minXPoint!.x, y: minYPoint!.y),
-                                size: CGSize(width: width, height: height))
-        return rect
-    }
     
+    func createRect(points: [CGPoint], boundingBox: CGRect, imageSize: CGSize) -> CGRect {
+        let minX = points.min { $0.x < $1.x }!.x
+            let minY = points.min { $0.y < $1.y }!.y
+            let maxX = points.max { $0.x < $1.x }!.x
+            let maxY = points.max { $0.y < $1.y }!.y
+
+            let minPoint = VNImagePointForFaceLandmarkPoint(
+              vector_float2(Float(minX), Float(minY)),
+              boundingBox,
+              Int(imageSize.width),
+              Int(imageSize.height))
+            let maxPoint = VNImagePointForFaceLandmarkPoint(
+              vector_float2(Float(maxX), Float(maxY)),
+              boundingBox,
+              Int(imageSize.width),
+              Int(imageSize.height))
+        let width = maxPoint.x - minPoint.x
+        let height = maxPoint.y - minPoint.y
+        
+        if width > height {
+            return CGRect(x: minPoint.x,
+                          y: minPoint.y,
+                          width: width,
+                          height: width)
+        } else {
+            return CGRect(x: minPoint.x,
+                          y: minPoint.y,
+                          width: height,
+                          height: height)
+        }
+    }
+
     func adjustOrientation(orient: UIImage.Orientation) -> UIImage.Orientation {
         switch orient {
         case .up: return .downMirrored
